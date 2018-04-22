@@ -49,8 +49,8 @@
         var SearchSuccess = function(response) {
            $('#search_result').html(`
                <span>${Object.keys(response.data).map(function(value, index){
-                   return `<p>${value}</p><br>`
-               })}</span>
+                   return `<p>${JSON.stringify(response.data[value])}</p>`
+               }).join('<br>')}</span>
            `);
         };
 

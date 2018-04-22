@@ -8,7 +8,14 @@ def home(request):
 
 
 def index(request):
-    apis.Index.index(dict(request.POST))
+    data = request.POST['data']
+    id = request.POST['id']
+    title = request.POST['title']
+    apis.Index.index({
+        'id': id,
+        'title': title,
+        'data': data
+    })
     return JsonResponse({'acknowledged': True})
 
 
