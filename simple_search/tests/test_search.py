@@ -1,12 +1,57 @@
 from search import apis
 import mock
+from database import apis as db_apis
 
 
 class TestIndex(object):
 
     def test_index(self):
+        apis.Index.index(data={'id': '34r35', 'f1': 'a quick brown'})
+
+    def test_calculate_rank(self):
         cls = apis.Index()
-        cls.index(data={'id': '34r35', 'f1': 'a quick brown'})
+
+        ii_term_file = {
+            'ii': {
+                'doc1': {
+                    'f1': 4,
+                    'f2': 5
+                },
+                'doc2': {
+                    'f1': 4,
+                    'f2': 5,
+                    'f3': 4
+                }
+            }
+        }
+
+        db_meta_file = {
+            'total_documents': 4
+        }
+
+        def retrieve(x):
+            if x == "%s$%s" % (apis._prefix('inverted_index'), 'w'):
+                return ii_term_file
+            else:
+                return db_meta_file
+
+        with mock.patch.object(
+                    db_apis.Operation,
+                    'retrieve',
+                    classmethod(lambda y, x: retrieve(x))
+                ):
+            result = cls.calculate_rank('doc1', 'f1', 'w')
+            assert result == 1.2041199826559248
+            result = cls.calculate_rank('doc2', 'f1', 'w')
+            assert result == 1.2041199826559248
+            result = cls.calculate_rank('doc1', 'f3', 'w')
+            assert result == 0.0
+            result = cls.calculate_rank('doc2', 'f3', 'w')
+            assert result == 2.4082399653118496
+            result = cls.calculate_rank('doc2', 'f3.f2', 'w')
+            assert result == 5.418539921951662
+            result = cls.calculate_rank('doc1', 'f3.f2', 'w')
+            assert result == 3.010299956639812
 
 
 class TestCachedSearch(object):

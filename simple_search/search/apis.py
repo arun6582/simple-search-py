@@ -24,12 +24,15 @@ class CachedSearch(object):
             fields = '.'.join(query['fields'])
             calcs = meta.get('calcs', {})
             for doc, comps in calcs.items():
+                # doc is system modified id not as fed in data during indexing
                 rank = comps.get(fields, None)
                 if not rank:
                     rank = Index.calculate_rank(doc, fields, query['term'])
                     calcs[doc][comps] = comps
                     calcs[doc][comps][fields] = rank
+            meta['calcs'] = calcs
             cls.set_meta(document, meta)
+            return {doc: comps[fields] for doc, comps in calcs.items()}
         except IOError:
             return {}
 
@@ -89,13 +92,13 @@ class Index(object):
 
         ii_ = 0
         for field in split_fields:
-            ii_ += ii_term['ii'][doc][field]
+            ii_ += ii_term['ii'][doc].get(field, 0)
 
         number_of_times_doc_occurence = 0
         for doc, values in ii_term['ii'].items():
             present = 1
             for field in split_fields:
-                present *= values.get(field, 0)
+                present *= bool(values.get(field, 0))
             number_of_times_doc_occurence += present
 
         db_meta_file = "%s$" % (_prefix('meta'), )
@@ -103,6 +106,8 @@ class Index(object):
             db_meta_file
         )['total_documents']
 
-        idf_ = math.log(total_documents / number_of_times_doc_occurence, 10)
+        idf_ = math.log10(
+            total_documents * 1.0 / number_of_times_doc_occurence
+        )
 
         return ii_ * idf_
