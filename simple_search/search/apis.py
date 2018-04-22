@@ -59,14 +59,6 @@ class CachedSearch(object):
 class Index(object):
 
     @classmethod
-    def total_documents(cls):
-        pass
-
-    @classmethod
-    def prepare_inverted_index_metas(cls, text):
-        pass
-
-    @classmethod
     def index(self, data):
         tokenized = {}
         for field, val in data.items():
@@ -93,6 +85,16 @@ class Index(object):
     @classmethod
     def update_inverted_index(cls, index):
         pass
+
+    @classmethod
+    def update_documents_meta(cls):
+        total = len(apis.Operation.get_documents("%s\$" % _prefix('document')))
+        try:
+            apis.Operation.retrieve("%s$" % _prefix('meta'))
+        except (IOError, OSError):
+            apis.Operation.save(
+                "%s$" % _prefix('meta'), {'total_documents': total}
+            )
 
     @classmethod
     def calculate_rank(cls, doc, fields, term):

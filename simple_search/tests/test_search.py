@@ -8,6 +8,14 @@ class TestIndex(object):
     def test_index(self):
         apis.Index.index(data={'id': '34r35', 'f1': 'a quick brown'})
 
+    @mock.patch.object(
+        db_apis.Operation, 'get_documents', classmethod(lambda y, x: [1, 2])
+    )
+    def test_update_documents_meta(self):
+        apis.Index.update_documents_meta()
+        metafile = db_apis.Operation.retrieve("%s$" % apis._prefix('meta'))
+        assert metafile['total_documents'] == 2
+
     def _get_meta(self):
         result = apis.CachedSearch.get_meta(
             {'fields': ['f1', 'f2'], 'term': 'w'}
