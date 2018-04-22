@@ -14,11 +14,12 @@ def index(request):
 
 def search(request):
     fields = request.GET.getlist('fields')
-    query = apis.Index.search(request.GET['query'])
+    query = request.GET['query']
+
     response = apis.Index.search(
         {
             'fields': fields or ['_all', ],
             'terms': query
         }
     )
-    return JsonResponse(response)
+    return JsonResponse({'data': response})

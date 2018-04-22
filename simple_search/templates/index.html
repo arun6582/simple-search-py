@@ -1,13 +1,85 @@
 {% load static %}
 
 <html>
-    <script src="{% static 'js/jquery-3.3.1.min.js' %}"></script>
-    <script>
-    </script>
+    <script src="{% static 'js/jquery-1.7.1.min.js' %}"></script>
 
     <h2>Index</h2>
 
+    <form id='index_form' method=POST enctype=multipart/form-data>
+        <label>ID</label>
+        <input id="id" name="id" type="number" required />
+        <label>Title</label>
+        <input id="title" name="title" type="text" required />
+        <label>Data</label>
+        <textarea id="data" name="data" cols="40" rows="10" required></textarea>
+        <button id="index_form_submit" type="submit">Index</button> 
+    </form>
+
     <br>
+    <div id="index_result">
+
+    </div>
+
 
     <h2>Search</h2>
+
+    <form id='search_form' method=GET enctype=multipart/form-data>
+        <label>Fields</label>
+        <input id="fields" name="fields" type="text" required value="_all"/>
+        <label>Data</label>
+        <input id="query" name="query" type="text" required/>
+        <button id="search_form_submit" type="submit">Search</button> 
+    </form>
+
+    <br>
+    <div id="search_result">
+
+    </div>
+
+
+    <script type='text/javascript'>
+        var csrftoken = "{{ csrf_token }}";
+
+        var IndexSuccess = function(response) {
+           $('#index_result').html(`
+               <span>${JSON.stringify(response)}</span>
+           `);
+        };
+
+        var SearchSuccess = function(response) {
+           $('#search_result').html(`
+               <span>${Object.keys(response.data).map(function(value, index){
+                   return `<p>${value}</p><br>`
+               })}</span>
+           `);
+        };
+
+        $(function(){
+            $('#index_form').submit(function (event) {
+                event.preventDefault();
+                var formData = new FormData($(this)[0]);
+                formData.set('csrfmiddlewaretoken', csrftoken);
+                $.ajax({
+                    processData: false,
+                    contentType: false,
+                    type: 'POST',
+                    url: window.location + "index/",
+                    data: formData,
+                    success: IndexSuccess
+                });
+            })
+            $('#search_form').submit(function (event) {
+                event.preventDefault();
+                var formData = $(this).serialize()
+                $.ajax({
+                    type: 'GET',
+                    url: window.location + "search/",
+                    data: formData,
+                    success: SearchSuccess
+                });
+            })
+        });
+    </script>
+
+
 </html>
