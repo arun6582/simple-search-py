@@ -4,20 +4,13 @@ import os
 import re
 
 
-def setup_db():
-    if os.path.exists(settings.DB_SETTINGS['path']):
-        return
-    os.makedirs(settings.DB_SETTINGS['path'])
-
-
-setup_db()
-
-
 class Operation(object):
+
+    db = settings.DB_SETTINGS['path']
 
     @classmethod
     def get_path(cls, filename):
-        return os.path.join(settings.DB_SETTINGS['path'], filename)
+        return os.path.join(cls.db, filename)
 
     @classmethod
     def save(cls, document, data):
@@ -48,5 +41,14 @@ class Operation(object):
     def get_documents(cls, regex_pattern):
         return filter(
             lambda key: bool(re.compile(regex_pattern).search(key)),
-            os.listdir(settings.DB_SETTINGS['path'])
+            os.listdir(cls.db)
         )
+
+
+def setup_db():
+    if os.path.exists(Operation.db):
+        return
+    os.makedirs(Operation.db)
+
+
+setup_db()

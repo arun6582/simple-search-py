@@ -68,22 +68,23 @@ class Index(object):
             except TypeError:
                 pass
 
-        apis.Operation.save("%s$%s" % (_prefix('document'), data['id']), data)
-        cls.update_inverted_index(_prefix('document'), tokenized)
+        document = "%s$%s" % (_prefix('document'), data['id'])
+        apis.Operation.save(document, data)
+        cls.update_inverted_index(document, tokenized)
         cls.update_documents_meta()
 
     @classmethod
     def search(cls, query):
         result = CachedSearch.search(
-            {'fields': query.get('fields', '_all'), 'terms': query['terms']}
+            {
+                'fields': query.get('fields', ['_all', ]),
+                'terms': query['terms']
+            }
         )
         response = []
         for doc, priority in result:
             response.append(
-                {
-                    'document': apis.Operation.retrieve(doc),
-                    'rank': priority
-                }
+                apis.Operation.retrieve(doc),
             )
         return response
 
@@ -129,7 +130,7 @@ class Index(object):
         for field in split_fields:
             ii_ += ii_term['ii'][doc].get(field, 0)
 
-        number_of_times_doc_occurence = 0
+        number_of_times_doc_occurence = 1
         for doc, values in ii_term['ii'].items():
             present = 1
             for field in split_fields:
