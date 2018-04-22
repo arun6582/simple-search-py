@@ -15,28 +15,40 @@ class Operation(object):
         return os.path.join(cls.db, filename)
 
     @classmethod
-    def save(cls, document, data):
+    def save(cls, document, data, node=None):
+        if node:
+            return requests.post(
+                node + "/meta/", data={'document': document, 'data': data}
+            ).json()['success']
         return utils.FileJsonIO(cls.get_path(document)).json_to_file(data)
 
     @classmethod
-    def get_or_create(cls, document, data):
+    def get_or_create(cls, document, data, node=None):
         try:
-            cls.retrieve(document)
+            cls.retrieve(document, node)
         except IOError:
-            return cls.save(document, data)
+            return cls.save(document, data, node=node)
 
     @classmethod
-    def create_or_update(cls, document, data):
+    def create_or_update(cls, document, data, node=None):
         try:
-            saved = cls.retrieve(document)
+            saved = cls.retrieve(document, node=node)
         except IOError:
-            return cls.save(document, data)
+            return cls.save(document, data, node=node)
         else:
             merged = utils.deep_merge_dicts(saved, data)
-            return cls.save(document, merged)
+            return cls.save(document, merged, node=node)
 
     @classmethod
-    def retrieve(cls, query):
+    def retrieve(cls, query, node=None):
+        if node:
+            response = requests.get(
+                "%s/meta/?document=%s" % (node, query)
+            ).json()
+            if response['success']:
+                return response['document']
+            else:
+                return {}
         return utils.FileJsonIO(cls.get_path(query)).file_to_json()
 
     @classmethod
@@ -52,7 +64,7 @@ class Operation(object):
         for url in settings.DB_SETTINGS['othernodes']:
             try:
                 # If live then meta must be present
-                response = requests.get("%s?document=meta$", url)
+                response = requests.get("%s?document=meta$" % url)
             except requests_exceptions.ConnectionError:
                 print("%s node isn't live" % url)
             else:

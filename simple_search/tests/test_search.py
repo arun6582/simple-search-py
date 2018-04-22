@@ -58,6 +58,7 @@ class TestIndex(object):
         result = apis.CachedSearch.get_meta(
             {'fields': ['f1', 'f2'], 'term': 'w'}
         )
+        result = map(lambda x: x[0].split("__")[1], result.items())
         assert 'doc1' in result
         assert 'doc2' in result
 
@@ -92,7 +93,7 @@ class TestIndex(object):
         with mock.patch.object(
                     db_apis.Operation,
                     'retrieve',
-                    classmethod(lambda y, x: retrieve(x))
+                    classmethod(lambda y, x, node: retrieve(x))
                 ):
 
             self._get_meta()
@@ -112,20 +113,20 @@ class TestCachedSearch(object):
     def test_search(self):
         meta = {
             'w1': {
-                'd1': 3,
-                'd2': 4
+                apis.unique_indenfier_doc('d1'): 3,
+                apis.unique_indenfier_doc('d2'): 4
             },
             'w2': {
-                'd2': 10,
-                'd4': 2
+                apis.unique_indenfier_doc('d2'): 10,
+                apis.unique_indenfier_doc('d4'): 2
             }
         }
 
         with mock.patch.object(
                     apis.CachedSearch, 'get_meta',
-                    classmethod(lambda y, x: meta[x['term']])
+                    classmethod(lambda y, x, node: meta[x['term']])
                 ):
             result = apis.CachedSearch.search(
                 {'fields': ['f1', 'f2'], 'terms': 'w1 w2'})
 
-        assert result == [('d2', 14), ('d1', 3), ('d4', 2)]
+            assert result == [('__d2', 14), ('__d1', 3), ('__d4', 2)]

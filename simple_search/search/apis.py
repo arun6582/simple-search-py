@@ -15,46 +15,65 @@ def _prefix(_type):
     return PREFIX[_type]
 
 
+def unique_indenfier_doc(document, node=None):
+    node = node or ""
+    return "%s__%s" % (node, document)
+
 class CachedSearch(object):
 
     @classmethod
-    def get_meta(cls, query):
+    def get_meta(cls, query, node=None):
         try:
             document = "%s$%s" % (_prefix('inverted_index'), query['term'])
-            meta = apis.Operation.retrieve(document)
+            meta = apis.Operation.retrieve(document, node=node)
+            print(query)
+            print(node)
+            print(meta)
             fields = '.'.join(query['fields'])
             calcs = meta.get('calcs', {})
             for doc, comps in meta['ii'].items():
                 # doc is system modified id not as fed in data during indexing
                 rank = calcs.get(doc, {}).get(fields, None)
                 if not rank:
-                    rank = Index.calculate_rank(doc, fields, query['term'])
+                    rank = Index.calculate_rank(doc, fields, query['term'], node=node)
                     calcs[doc] = calcs.get(doc, {})
                     calcs[doc][fields] = rank
             meta['calcs'] = calcs
-            cls.set_meta(document, meta)
-            return {doc: comps[fields] for doc, comps in calcs.items()}
+            cls.set_meta(document, meta, node=node)
+            return {
+                unique_indenfier_doc(doc, node): comps[fields] for doc, comps in calcs.items()
+            }
         except IOError:
             return {}
 
     @classmethod
-    def delete_meta(cls, word, doc):
+    def delete_meta(cls, word, doc, node=None):
         document = "%s$%s" % (_prefix('inverted_index'), word)
-        js = apis.Operation.retrieve(document)
+        js = apis.Operation.retrieve(document, node=node)
         js.pop('calcs', {})
-        return apis.Operation.save(document, js)
+        return apis.Operation.save(document, js, node=node)
 
     @classmethod
-    def set_meta(cls, document, data):
-        return apis.Operation.save(document, data)
+    def set_meta(cls, document, data, node=None):
+        return apis.Operation.save(document, data, node=node)
 
     @classmethod
     def search(cls, query):
         fields = sorted(query['fields'])
         words = re.findall("\w+", query['terms'])
         metas = []
+        """
+        meta format
+        {doc: rank, doc2: rank2...}
+        """
         for word in words:
-            metas.append(cls.get_meta({'fields': fields, 'term': word}))
+            metas.append(cls.get_meta({'fields': fields, 'term': word}, node=None))
+
+        for node in apis.Operation.live_nodes():
+            for word in words:
+                metas.append(
+                    cls.get_meta({'fields': fields, 'term': word}, node=node)
+                )
 
         consolidated = {}
         for meta in metas:
@@ -90,8 +109,9 @@ class Index(object):
         )
         response = []
         for doc, priority in result:
+            node, document = doc.split("__")
             response.append(
-                apis.Operation.retrieve(doc),
+                apis.Operation.retrieve(document, node=node)
             )
         return response
 
@@ -128,17 +148,20 @@ class Index(object):
         )
 
     @classmethod
-    def calculate_rank(cls, doc, fields, term):
+    def calculate_rank(cls, doc, fields, term, node=None):
         # term is present in doc that why we have doc
         split_fields = fields.split(".")
         ii_term_file = "%s$%s" % (_prefix('inverted_index'), term)
-        ii_term = apis.Operation.retrieve(ii_term_file)
+        ii_term = apis.Operation.retrieve(ii_term_file, node=node)
 
         ii_ = 0
         total_words = 1
         for field in split_fields:
+            print(ii_term['ii'])
             ii_ += ii_term['ii'][doc].get(field, 0)
-            total_words += len(apis.Operation.retrieve(doc).get(field, []))
+            total_words += len(
+                apis.Operation.retrieve(doc, node=node).get(field, [])
+            )
 
         number_of_times_doc_occurence = 1
         for doc, values in ii_term['ii'].items():
@@ -149,8 +172,12 @@ class Index(object):
 
         db_meta_file = "%s$" % (_prefix('meta'), )
         total_documents = apis.Operation.retrieve(
-            db_meta_file
+            db_meta_file, node=node
         )['total_documents']
+
+        for node in apis.Operation.live_nodes():
+            db_meta_file = apis.Operation.retrieve(db_meta_file, node)
+            total_documents += db_meta_file['total_documents']
 
         idf_ = math.log10(
             total_documents * 1.0 / number_of_times_doc_occurence

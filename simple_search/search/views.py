@@ -1,7 +1,10 @@
 from . import apis
 from django.http import JsonResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from database import apis as db_apis
+from django.views.generic import View
 
 
 def home(request):
@@ -33,13 +36,32 @@ def search(request):
     return JsonResponse({'data': response})
 
 
-def meta(request):
-    try:
-        return JsonResponse(
-            {
-                'success': True,
-                'document': db_apis.Operation.retrieve(request.GET['document'])
-            }
-        )
-    except IOError:
-        return JsonResponse({'success': False})
+@method_decorator(csrf_exempt, name='dispatch')
+class Meta(View):
+
+    def get(self, request, *args, **kwargs):
+        try:
+            return JsonResponse(
+                {
+                    'success': True,
+                    'document': db_apis.Operation.retrieve(
+                        request.GET['document']
+                    )
+                }
+            )
+        except IOError:
+            return JsonResponse({'success': False})
+
+    def post(self, request, *args, **kwargs):
+        print(request.body)
+        document = request.POST['document']
+        data = request.POST['data']
+        try:
+            return JsonResponse(
+                {
+                    'success': True,
+                    'document': db_apis.Operation.save(document, data)
+                }
+            )
+        except IOError:
+            return JsonResponse({'success': False})
