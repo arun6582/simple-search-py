@@ -8,32 +8,11 @@ class TestIndex(object):
     def test_index(self):
         apis.Index.index(data={'id': '34r35', 'f1': 'a quick brown'})
 
-    def test_get_meta(self):
-        ii_term_file = {
-            'ii': {
-                'doc1': {
-                    'f1': 4,
-                    'f2': 5
-                },
-                'doc2': {
-                    'f1': 4,
-                    'f2': 5,
-                    'f3': 4
-                }
-            }
-        }
-
-        with mock.patch.object(
-                apis.Index, 'calculate_rank', classmethod(
-                    lambda a, b, c, d: 10)
-            ), mock.patch.object(
-                        db_apis.Operation, 'retrieve',
-                        classmethod(lambda y, x: ii_term_file)
-                    ):
-                result = apis.CachedSearch.get_meta(
-                    {'fields': ['f1', 'f2'], 'term': 'w'}
-                )
-                assert result == 4
+    def _get_meta(self):
+        result = apis.CachedSearch.get_meta(
+            {'fields': ['f1', 'f2'], 'term': 'w'}
+        )
+        assert result == {'doc1': 2.709269960975831, 'doc2': 2.709269960975831}
 
     def test_calculate_rank(self):
         cls = apis.Index()
@@ -67,6 +46,8 @@ class TestIndex(object):
                     'retrieve',
                     classmethod(lambda y, x: retrieve(x))
                 ):
+
+            self._get_meta()
             result = cls.calculate_rank('doc1', 'f1', 'w')
             assert result == 1.2041199826559248
             result = cls.calculate_rank('doc2', 'f1', 'w')

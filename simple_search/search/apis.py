@@ -24,7 +24,6 @@ class CachedSearch(object):
             fields = '.'.join(query['fields'])
             calcs = meta.get('calcs', {})
             for doc, comps in meta['ii'].items():
-                import pdb; pdb.set_trace()
                 # doc is system modified id not as fed in data during indexing
                 rank = calcs.get(doc, {}).get(fields, None)
                 if not rank:
