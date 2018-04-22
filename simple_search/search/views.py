@@ -1,6 +1,7 @@
 from . import apis
 from django.http import JsonResponse
 from django.shortcuts import render
+from database import apis as db_apis
 
 
 def home(request):
@@ -30,3 +31,15 @@ def search(request):
         }
     )
     return JsonResponse({'data': response})
+
+
+def meta(request):
+    try:
+        return JsonResponse(
+            {
+                'success': True,
+                'document': db_apis.Operation.retrieve(request.GET['document'])
+            }
+        )
+    except IOError:
+        return JsonResponse({'success': False})
