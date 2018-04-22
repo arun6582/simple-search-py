@@ -14,6 +14,7 @@ class Index(object):
 
     @classmethod
     def index(self, data):
+        import pdb; pdb.set_trace()
         tokenized = {}
         for field, val in data.items():
             tokenized[field] = re.findall("\w+", val)
