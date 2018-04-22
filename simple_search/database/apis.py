@@ -18,7 +18,10 @@ class Operation(object):
     def save(cls, document, data, node=None):
         if node:
             return requests.post(
-                node + "/meta/", data={'document': document, 'data': data}
+                node + "/meta/",
+                json={
+                    'document': document, 'data': data
+                }
             ).json()['success']
         return utils.FileJsonIO(cls.get_path(document)).json_to_file(data)
 
@@ -36,8 +39,8 @@ class Operation(object):
         except IOError:
             return cls.save(document, data, node=node)
         else:
-            merged = utils.deep_merge_dicts(saved, data)
-            return cls.save(document, merged, node=node)
+            saved.update(data)
+            return cls.save(document, saved, node=node)
 
     @classmethod
     def retrieve(cls, query, node=None):

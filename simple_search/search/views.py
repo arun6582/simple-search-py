@@ -5,6 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from database import apis as db_apis
 from django.views.generic import View
+import json
 
 
 def home(request):
@@ -53,9 +54,9 @@ class Meta(View):
             return JsonResponse({'success': False})
 
     def post(self, request, *args, **kwargs):
-        print(request.body)
-        document = request.POST['document']
-        data = request.POST['data']
+        js = json.loads(request.body)
+        document = js['document']
+        data = js['data']
         try:
             return JsonResponse(
                 {

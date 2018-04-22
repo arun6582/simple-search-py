@@ -35,7 +35,7 @@ def deep_merge_dicts(*args, **kwargs):
         for key, value in d2.items():
             if key in d1 and isinstance(
                     value, dict) and isinstance(d1[key], dict):
-                d1[key] = deep_merge_dicts(d1[key], value)
+                d1[key] = deep_merge_dicts(d1[key], value, **kwargs)
             else:
                 d1[key] = value
         return d1

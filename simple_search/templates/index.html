@@ -44,6 +44,8 @@
            $('#index_result').html(`
                <span>${JSON.stringify(response)}</span>
            `);
+
+           setTimeout(function() {$('#index_result').html('Index again')}, 500);
         };
 
         var SearchSuccess = function(response) {
@@ -65,7 +67,10 @@
                     type: 'POST',
                     url: window.location + "index/",
                     data: formData,
-                    success: IndexSuccess
+                    success: IndexSuccess,
+                    error: function(response) {
+                        alert(response);
+                    }
                 });
             })
             $('#search_form').submit(function (event) {
@@ -75,7 +80,10 @@
                     type: 'GET',
                     url: window.location + "search/",
                     data: formData,
-                    success: SearchSuccess
+                    success: SearchSuccess,
+                    error: function(response) {
+                        alert(response);
+                    }
                 });
             })
         });

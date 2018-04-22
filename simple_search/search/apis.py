@@ -19,6 +19,7 @@ def unique_indenfier_doc(document, node=None):
     node = node or ""
     return "%s__%s" % (node, document)
 
+
 class CachedSearch(object):
 
     @classmethod
@@ -26,12 +27,9 @@ class CachedSearch(object):
         try:
             document = "%s$%s" % (_prefix('inverted_index'), query['term'])
             meta = apis.Operation.retrieve(document, node=node)
-            print(query)
-            print(node)
-            print(meta)
             fields = '.'.join(query['fields'])
             calcs = meta.get('calcs', {})
-            for doc, comps in meta['ii'].items():
+            for doc, _ in meta.get('ii', {}).items():
                 # doc is system modified id not as fed in data during indexing
                 rank = calcs.get(doc, {}).get(fields, None)
                 if not rank:
@@ -108,7 +106,7 @@ class Index(object):
             }
         )
         response = []
-        for doc, priority in result:
+        for doc, _ in result:
             node, document = doc.split("__")
             response.append(
                 apis.Operation.retrieve(document, node=node)
@@ -157,7 +155,6 @@ class Index(object):
         ii_ = 0
         total_words = 1
         for field in split_fields:
-            print(ii_term['ii'])
             ii_ += ii_term['ii'][doc].get(field, 0)
             total_words += len(
                 apis.Operation.retrieve(doc, node=node).get(field, [])
