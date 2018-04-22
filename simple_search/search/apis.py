@@ -77,7 +77,18 @@ class Index(object):
 
     @classmethod
     def search(cls, query):
-        pass
+        result = CachedSearch.search(
+            {'fields': query.get('fields', '_all'), 'terms': query['terms']}
+        )
+        response = []
+        for doc, priority in result:
+            response.append(
+                {
+                    'document': apis.Operation.retrieve(doc),
+                    'rank': priority
+                }
+            )
+        return response
 
     @classmethod
     def update_inverted_index(cls, index):
