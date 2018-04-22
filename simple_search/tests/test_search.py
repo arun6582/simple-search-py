@@ -1,6 +1,7 @@
 from search import apis
 import mock
 from database import apis as db_apis
+import re
 
 
 class TestIndex(object):
@@ -15,6 +16,21 @@ class TestIndex(object):
         apis.Index.update_documents_meta()
         metafile = db_apis.Operation.retrieve("%s$" % apis._prefix('meta'))
         assert metafile['total_documents'] == 2
+
+    def test_update_inverted_index(self):
+        result = apis.Index.update_inverted_index(
+            "%s$%s" % (apis._prefix('document'), '44'),
+            {
+                'f1': re.findall('\w+', 'a quick brown'),
+                'f2': re.findall('\w+', 'jump right over the'),
+                'f3': re.findall('\w+', 'over a lazy dog')
+            }
+        )
+        assert 'f1' not in result['the']
+        assert 'f1' in result['brown']
+        assert result['brown']['_all'] == 1
+        assert result['the']['_all'] == 1
+        assert result['a']['_all'] == 2
 
     def _get_meta(self):
         result = apis.CachedSearch.get_meta(

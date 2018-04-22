@@ -1,6 +1,7 @@
 import re
 from database import apis
 import math
+import collections
 
 
 PREFIX = {
@@ -59,13 +60,17 @@ class CachedSearch(object):
 class Index(object):
 
     @classmethod
-    def index(self, data):
+    def index(cls, data):
         tokenized = {}
         for field, val in data.items():
             try:
                 tokenized[field] = re.findall("\w+", val)
             except TypeError:
                 pass
+
+        apis.Operation.save("%s$%s" % (_prefix('document'), data['id']), data)
+        cls.update_inverted_index(_prefix('document'), tokenized)
+        cls.update_documents_meta()
 
     @classmethod
     def search(cls, query):
@@ -83,18 +88,35 @@ class Index(object):
         return response
 
     @classmethod
-    def update_inverted_index(cls, index):
-        pass
+    def update_inverted_index(cls, document, tokenized_field_data):
+        ii = collections.defaultdict(
+            lambda: collections.defaultdict(
+                int
+            )
+        )
+        for field, array_or_words in tokenized_field_data.items():
+            for word in array_or_words:
+                ii[word][field] += 1
+                ii[word]['_all'] += 1
+
+        for word, metas in ii.items():
+            apis.Operation.create_or_update(
+                "%s$%s" % (_prefix('inverted_index'), word),
+                {
+                    'ii': {
+                        document: metas
+                    }
+
+                }
+            )
+        return ii
 
     @classmethod
     def update_documents_meta(cls):
         total = len(apis.Operation.get_documents("%s\$" % _prefix('document')))
-        try:
-            apis.Operation.retrieve("%s$" % _prefix('meta'))
-        except (IOError, OSError):
-            apis.Operation.save(
-                "%s$" % _prefix('meta'), {'total_documents': total}
-            )
+        apis.Operation.create_or_update(
+            "%s$" % _prefix('meta'), {'total_documents': total}
+        )
 
     @classmethod
     def calculate_rank(cls, doc, fields, term):
