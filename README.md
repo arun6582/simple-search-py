@@ -32,6 +32,7 @@ node1.py.
 
 ...You can have as many node as possible and you can configure any node to search on
 any other node.
+...Every node is independent of the other in terms of seperation of machines.
 
 ## Features
 1. multi node search
