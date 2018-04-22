@@ -38,6 +38,13 @@ class CachedSearch(object):
             return {}
 
     @classmethod
+    def delete_meta(cls, word, doc):
+        document = "%s$%s" % (_prefix('inverted_index'), word)
+        js = apis.Operation.retrieve(document)
+        js.pop('calcs', {})
+        return apis.Operation.save(document, js)
+
+    @classmethod
     def set_meta(cls, document, data):
         return apis.Operation.save(document, data)
 
@@ -110,6 +117,7 @@ class Index(object):
 
                 }
             )
+            CachedSearch.delete_meta(word, document)
         return ii
 
     @classmethod
