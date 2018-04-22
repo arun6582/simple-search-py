@@ -48,13 +48,17 @@ class Operation(object):
 
     @classmethod
     def live_nodes(cls):
+        live = []
         for url in settings.DB_SETTINGS['othernodes']:
             try:
                 # If live then meta must be present
-                requests.get("%s?document=meta$", url)
+                response = requests.get("%s?document=meta$", url)
             except requests_exceptions.ConnectionError:
                 print("%s node isn't live" % url)
-        return url
+            else:
+                response.status_code == 200
+                live.append(url)
+        return live
 
 
 def setup_db():
