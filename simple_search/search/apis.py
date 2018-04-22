@@ -127,8 +127,10 @@ class Index(object):
         ii_term = apis.Operation.retrieve(ii_term_file)
 
         ii_ = 0
+        total_words = 1
         for field in split_fields:
             ii_ += ii_term['ii'][doc].get(field, 0)
+            total_words += len(apis.Operation.retrieve(doc).get(field, []))
 
         number_of_times_doc_occurence = 1
         for doc, values in ii_term['ii'].items():
@@ -146,4 +148,4 @@ class Index(object):
             total_documents * 1.0 / number_of_times_doc_occurence
         )
 
-        return ii_ * idf_
+        return (ii_ / total_words) * idf_
