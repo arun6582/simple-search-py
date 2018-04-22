@@ -2,6 +2,8 @@ from django.conf import settings
 import utils
 import os
 import re
+import requests
+import requests.exceptions as requests_exceptions
 
 
 class Operation(object):
@@ -43,6 +45,16 @@ class Operation(object):
             lambda key: bool(re.compile(regex_pattern).search(key)),
             os.listdir(cls.db)
         )
+
+    @classmethod
+    def live_nodes(cls):
+        for url in settings.DB_SETTINGS['othernodes']:
+            try:
+                # If live then meta must be present
+                requests.get("%s?document=meta$", url)
+            except requests_exceptions.ConnectionError:
+                print("%s node isn't live" % url)
+        return url
 
 
 def setup_db():
