@@ -23,13 +23,14 @@ class CachedSearch(object):
             meta = apis.Operation.retrieve(document)
             fields = '.'.join(query['fields'])
             calcs = meta.get('calcs', {})
-            for doc, comps in calcs.items():
+            for doc, comps in meta['ii'].items():
+                import pdb; pdb.set_trace()
                 # doc is system modified id not as fed in data during indexing
-                rank = comps.get(fields, None)
+                rank = calcs.get(doc, {}).get(fields, None)
                 if not rank:
                     rank = Index.calculate_rank(doc, fields, query['term'])
-                    calcs[doc][comps] = comps
-                    calcs[doc][comps][fields] = rank
+                    calcs[doc] = calcs.get(doc, {})
+                    calcs[doc][fields] = rank
             meta['calcs'] = calcs
             cls.set_meta(document, meta)
             return {doc: comps[fields] for doc, comps in calcs.items()}

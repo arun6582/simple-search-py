@@ -4,19 +4,28 @@ import os
 import re
 
 
+def setup_db():
+    if os.path.exists(settings.DB_SETTINGS['path']):
+        return
+    os.makedirs(settings.DB_SETTINGS['path'])
+
+
+setup_db()
+
+
 class Operation(object):
 
     @classmethod
     def get_path(cls, filename):
-        return os.path.join(settings.DB_SETTINGS, filename)
+        return os.path.join(settings.DB_SETTINGS['path'], filename)
 
     @classmethod
     def save(cls, document, data):
-        return utils.FileJsonIO.json_to_file(data, cls.get_path(document))
+        return utils.FileJsonIO(cls.get_path(document)).json_to_file(data)
 
     @classmethod
     def retrieve(cls, query):
-        return utils.FileJsonIO.file_to_json(cls.get_path(query))
+        return utils.FileJsonIO(cls.get_path(query)).file_to_json()
 
     @classmethod
     def get_documents(cls, regex_pattern):
