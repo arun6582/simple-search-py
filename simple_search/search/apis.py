@@ -1,5 +1,6 @@
 import re
 from database import apis
+import math
 
 
 PREFIX = {
@@ -28,7 +29,6 @@ class CachedSearch(object):
                     rank = Index.calculate_rank(doc, fields, query['term'])
                     calcs[doc][comps] = comps
                     calcs[doc][comps][fields] = rank
-
             cls.set_meta(document, meta)
         except IOError:
             return {}
@@ -82,4 +82,27 @@ class Index(object):
 
     @classmethod
     def calculate_rank(cls, doc, fields, term):
-        return {}
+        # term is present in doc that why we have doc
+        split_fields = fields.split(".")
+        ii_term_file = "%s$%s" % (_prefix('inverted_index'), term)
+        ii_term = apis.Operation.retrieve(ii_term_file)
+
+        ii_ = 0
+        for field in split_fields:
+            ii_ += ii_term['ii'][doc][field]
+
+        number_of_times_doc_occurence = 0
+        for doc, values in ii_term['ii'].items():
+            present = 1
+            for field in split_fields:
+                present *= values.get(field, 0)
+            number_of_times_doc_occurence += present
+
+        db_meta_file = "%s$" % (_prefix('meta'), )
+        total_documents = apis.Operation.retrieve(
+            db_meta_file
+        )['total_documents']
+
+        idf_ = math.log(total_documents / number_of_times_doc_occurence, 10)
+
+        return ii_ * idf_
